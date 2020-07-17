@@ -175,6 +175,7 @@
 				F2BAD18024BD808C009ED1E2 /* Sources */,
 				F2BAD18124BD808C009ED1E2 /* Frameworks */,
 				F2BAD18224BD808C009ED1E2 /* Resources */,
+				6DD799420951FC00BE86E1E9 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -293,6 +294,23 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		6DD799420951FC00BE86E1E9 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-DemoInstagram/Pods-DemoInstagram-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-DemoInstagram/Pods-DemoInstagram-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-DemoInstagram/Pods-DemoInstagram-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		BCDE7CFB87D629FB9CEFF7F9 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;

@@ -8,6 +8,7 @@
 
 import SwiftUI
 import Firebase
+import Combine
 
 struct ContentView: View {
     var body: some View {
@@ -33,8 +34,6 @@ struct TabView: View{
         VStack{
             
             Home()
-            
-            
             
             Divider()
             
@@ -110,6 +109,8 @@ struct TabView: View{
 
 struct Home: View {
     
+    @ObservedObject var observed = observer()
+    
     var body: some View{
         
         VStack{
@@ -159,15 +160,44 @@ struct Home: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         
                         HStack{
-                            ForEach(0..<6){_ in
+                            
+                            Button(action: {
+                                
+                            }) {
+                                
+                                VStack{
+                                    ZStack{
+                                        Image("mb5")
+                                        .resizable()
+                                        .frame(width: 50, height: 50)
+                                        .clipShape(Circle())
+                                            .overlay(Circle().stroke(LinearGradient(gradient: Gradient(colors: [.red,.orange]), startPoint: .bottom, endPoint: .top), lineWidth: 3))
+                                        
+                                        Image("plus")
+                                        .resizable()
+                                        .frame(width: 15, height: 15)
+                                            .foregroundColor(.white)
+                                            .background(Color.blue)
+                                            .clipShape(Circle())
+                                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                                            .offset(x: 20, y: 20)
+                                    }
+                        
+                                    Text("Your Story")
+                                        .foregroundColor(.black)
+                                }
+                                
+                                
+                            }
+                            ForEach(observed.status){i in
                                 
                                 VStack(spacing: 10){
-                                    StatusCard(imgName: "people")
-                                    Text("Your Story")
+                                    StatusCard(imgName: i.image)
+                                    Text("\(i.name)")
                                         .font(.footnote)
                                 }.padding()
                             }
-                        }
+                        }.padding()
                     }
                     
                     Divider()
@@ -192,13 +222,18 @@ struct StatusCard : View {
     
     var imgName = ""
     
+    
     var body: some View {
         
-        Image(imgName)
-        .resizable()
-        .frame(width: 50, height: 50)
-        .clipShape(Circle())
-            .overlay(Circle().stroke(LinearGradient(gradient: Gradient(colors: [.red,.orange]), startPoint: .bottom, endPoint: .top), lineWidth: 3))
+        Button(action: {
+            
+        }) {
+            RemoteImage(url: imgName, placeholder: Image(systemName: "photo"))
+            
+            .frame(width: 50, height: 50)
+            .clipShape(Circle())
+                .overlay(Circle().stroke(LinearGradient(gradient: Gradient(colors: [.red,.orange]), startPoint: .bottom, endPoint: .top), lineWidth: 3))
+        }.padding()
     }
 }
 
@@ -242,7 +277,7 @@ struct postCard : View{
                 
             }.padding()
             
-            Image("heart").frame(height: 300)
+            Image("baovu").resizable().frame(height: 300)
             
             HStack{
                 
@@ -292,5 +327,91 @@ struct postCard : View{
             
         }
         
+    }
+}
+
+
+// This is a class to get data from Firebase...
+
+class observer : ObservableObject{
+    
+    @Published var status = [datatype]()
+    
+    init(){
+        
+        let db = Firestore.firestore()
+        db.collection("status").addSnapshotListener { (snap, error) in
+            
+            if error != nil {
+                print("Error")
+                return
+            }
+            
+            for i in snap!.documentChanges{
+                
+                if i.type == .added{
+                    
+                    let id = i.document.documentID
+                    let name = i.document.get("name") as! String
+                    let image = i.document.get("image") as! String
+                    
+                    self.status.append(datatype(id: id, name: name, image: image))
+                }
+            }
+        }
+    }
+}
+
+// This is a struct of data.....
+
+struct datatype: Identifiable {
+    
+    var id : String
+    var name: String
+    var image: String
+    
+}
+
+// This is a class to load Images from the Internet by using URL....
+
+class ImageLoader: ObservableObject{
+    
+    @Published var downloadImage: UIImage?
+    
+    func fetchImage(url: String){
+        
+        guard let imageURL = URL(string: url) else{
+            
+            fatalError("The url string is invalid")
+        }
+        URLSession.shared.dataTask(with: imageURL) { (data, response, err) in
+            guard let data = data , err == nil else{
+                fatalError("Error data")
+            }
+            DispatchQueue.main.async {
+                self.downloadImage = UIImage(data: data)
+            }
+        }.resume()
+    }
+}
+
+// This is a struct of remoteImage...
+
+struct RemoteImage: View{
+    
+    @ObservedObject var imageLoader = ImageLoader()
+    var placeholder: Image
+    
+    init(url:String, placeholder: Image = Image(systemName: "photo")){
+        self.placeholder = placeholder
+        self.imageLoader.fetchImage(url: url)
+    }
+    
+    var body: some View{
+        
+        if let image = self.imageLoader.downloadImage{
+            return Image(uiImage: image).resizable()
+        }
+        return placeholder
     }
 }
