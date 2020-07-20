@@ -33,9 +33,12 @@ struct TabView: View{
         
         VStack{
             
-            Home()
+            ZStack{
+                
+                Home().opacity(self.index == 0 ? 1:0)
+                Upload().opacity(self.index == 2 ? 1:0)
+            }
             
-            Divider()
             
             HStack{
                 
@@ -159,7 +162,7 @@ struct Home: View {
                 VStack{
                     ScrollView(.horizontal, showsIndicators: false) {
                         
-                        HStack{
+                        HStack(spacing: 10){
                             
                             Button(action: {
                                 
@@ -191,20 +194,19 @@ struct Home: View {
                             }
                             ForEach(observed.status){i in
                                 
-                                VStack(spacing: 10){
-                                    StatusCard(imgName: i.image)
-                                    Text("\(i.name)")
-                                        .font(.footnote)
-                                }.padding()
+                                VStack{
+                                    StatusCard(imgName: i.image,name: i.name)
+                                    
+                                }
                             }
                         }.padding()
                     }
                     
                     Divider()
                     
-                    ForEach(0..<8){_ in
+                    ForEach(observed.status){i in
                         
-                       postCard(user: "", image: "", id: "")
+                        postCard(user: i.name, image: i.image, id: i.id)
                         
                         Divider()
                         
@@ -221,18 +223,23 @@ struct Home: View {
 struct StatusCard : View {
     
     var imgName = ""
-    
+    var name = ""
     
     var body: some View {
         
         Button(action: {
             
         }) {
-            RemoteImage(url: imgName, placeholder: Image(systemName: "photo"))
+            VStack{
+                RemoteImage(url: imgName, placeholder: Image(systemName: "photo"))
+                
+                .frame(width: 50, height: 50)
+                .clipShape(Circle())
+                    .overlay(Circle().stroke(LinearGradient(gradient: Gradient(colors: [.red,.orange]), startPoint: .bottom, endPoint: .top), lineWidth: 3))
+                Text("\(name)")
+                    .font(.footnote)
+            }
             
-            .frame(width: 50, height: 50)
-            .clipShape(Circle())
-                .overlay(Circle().stroke(LinearGradient(gradient: Gradient(colors: [.red,.orange]), startPoint: .bottom, endPoint: .top), lineWidth: 3))
         }.padding()
     }
 }
@@ -254,14 +261,15 @@ struct postCard : View{
                 Button(action: {
                     
                 }) {
-                    HStack{
-                        Image("home")
-                        .resizable()
+                 //   HStack(spacing: 10){
+                        RemoteImage(url: image, placeholder:Image(systemName: "photo"))
+                        
                         .frame(width: 35, height: 35)
                             .clipShape(Circle())
                         
-                        Text("User")
-                    }
+                        Text("\(user)")
+                            .font(.footnote)
+                 //   }
                 }
                 
                 Spacer()
@@ -355,7 +363,9 @@ class observer : ObservableObject{
                     let name = i.document.get("name") as! String
                     let image = i.document.get("image") as! String
                     
-                    self.status.append(datatype(id: id, name: name, image: image))
+                    DispatchQueue.main.async {
+                        self.status.append(datatype(id: id, name: name, image: image))
+                    }
                 }
             }
         }
@@ -413,5 +423,107 @@ struct RemoteImage: View{
             return Image(uiImage: image).resizable()
         }
         return placeholder
+    }
+}
+
+//This is a struct of Upload photos....
+
+struct Upload: View {
+    
+    @State private var showSheet: Bool = false
+    @State private var showImagePicker: Bool = false
+    @State private var sourceType: UIImagePickerController.SourceType = .photoLibrary
+    @State private var image: UIImage?
+    var body: some View{
+        
+        VStack{
+            
+            ZStack{
+                HStack{
+                    
+                    Button(action: {
+                        
+                    }) {
+                        Text("Cancel")
+                            .font(.title)
+                            .foregroundColor(.black)
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        
+                    }) {
+                        Text("Next")
+                            .font(.title)
+                            .foregroundColor(.blue)
+                    }
+                }.padding()
+                HStack{
+                    Text("Recents")
+                    .foregroundColor(.gray)
+                    .font(.title)
+                    Button(action: {
+                        self.showSheet = true
+                    }) {
+                        Image(systemName: "arrow.down")
+                    }
+                }
+                
+            }
+            Divider()
+            Spacer()
+            
+                .actionSheet(isPresented: $showSheet) {
+                    ActionSheet(title: Text("Select Photo"), message: Text("Choose"), buttons: [.default(Text("Photo Library"), action: {
+                        self.showImagePicker = true
+                        self.sourceType = .photoLibrary
+                    }),
+                                                                                                .default(Text("Camera"), action: {
+                                                                                                    self.showImagePicker = true
+                                                                                                    self.sourceType = .camera                                         }),
+                                                                                                .cancel()
+                    ])
+            }
+        }.sheet(isPresented: $showImagePicker) {
+            Text("MODAL")
+        }
+    }
+}
+
+// This is a struct to create ImagePicker View...
+
+struct ImagePicker: UIViewControllerRepresentable{
+    
+    typealias Coordinator = ImagePickerCoordinator
+    
+    @Binding var image: UIImage?
+    var sourceType: UIImagePickerController.SourceType = .camera
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = sourceType
+        picker.delegate = context.coordinator
+        return picker
+    }
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {
+        
+    }
+    func makeCoordinator() -> ImagePicker.Coordinator {
+        return ImagePickerCoordinator(image: $image)
+    }
+}
+
+class ImagePickerCoordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate{
+    
+    @Binding var image: UIImage?
+    
+    init(image: Binding<UIImage?>) {
+        _image = image
+    }
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+       if  let uiImage = info[UIImagePickerController.InfoKey.originalImage] as? UIImage{
+            image = uiImage
+        }
     }
 }
